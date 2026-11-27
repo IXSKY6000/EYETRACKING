@@ -15,6 +15,7 @@ from PIL import Image, ImageTk
 
 from .geometry import Calibration, Ray, calibrate, closest_approach
 from .gestures import BrowClicks
+from .scene import SceneView
 from .vision import FaceTracker, Observation
 
 BACKGROUND = "#101718"
@@ -97,6 +98,8 @@ class Application:
         self.clicks = BrowClicks()
         self.last_frame: Frame | None = None
         self.last_preview = 0.0
+        self.last_scene = 0.0
+        self.scene: SceneView | None = None
         self.last_gaze = 0.0
         self.notice = "Commencez par calibrer l’écran."
         self.threshold = tk.DoubleVar(value=0.085)
@@ -145,6 +148,8 @@ class Application:
         self.mouse_button = ttk.Button(controls, text="Activer le pointeur", style="Control.TButton",
                                        command=self.toggle_mouse, state="disabled")
         self.mouse_button.pack(fill="x")
+        ttk.Button(controls, text="Ouvrir la vue 3D", style="Control.TButton",
+                   command=self.open_scene).pack(fill="x", pady=(5, 0))
         self.camera_button = ttk.Button(controls, text="Relancer la caméra", style="Control.TButton",
                                          command=self.start_camera)
         tk.Label(controls, text="Seuil de levée des sourcils", bg=PANEL, fg=TEXT).pack(anchor="w", pady=(13, 1))
@@ -154,6 +159,13 @@ class Application:
                  justify="left").pack(anchor="w", pady=(6, 12))
         tk.Label(controls, textvariable=self.detail, bg=PANEL, fg=MUTED, justify="left",
                  font=("TkFixedFont", 9), wraplength=275).pack(anchor="w")
+
+    def open_scene(self) -> None:
+        self.pause_mouse()
+        if self.scene is None or not self.scene.window.winfo_exists():
+            self.scene = SceneView(self.root)
+        self.scene.window.lift()
+        self.scene.window.focus_set()
 
     def start_camera(self) -> None:
         self.camera_button.pack_forget()
@@ -383,6 +395,10 @@ class Application:
             if fresh and self.target_index is None and now - self.last_preview >= 0.083:
                 self.last_preview = now
                 self.update_preview(frame)
+        if self.scene is not None and self.scene.window.winfo_exists() and now - self.last_scene >= 0.065:
+            plane = self.calibration.plane if self.calibration is not None else None
+            self.scene.update(frame.face if current and self.camera.error is None else None, plane)
+            self.last_scene = now
         self.last_frame = frame
         self.root.after(25, self.tick)
 
@@ -426,6 +442,10 @@ def main() -> int:
 
             if min(pyautogui.size()) <= 0:
                 return 1
+            scene = SceneView(root)
+            scene.window.update_idletasks()
+            scene.render()
+            scene.window.destroy()
             tracker = FaceTracker(args.fov)
             try:
                 frame = np.zeros((256, 256, 3), dtype=np.uint8)

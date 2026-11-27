@@ -39,6 +39,7 @@ class Observation:
     eyes: tuple[np.ndarray, np.ndarray]
     rays: tuple[Ray, Ray] | None
     brows: np.ndarray
+    landmarks: np.ndarray
 
 
 class FaceTracker:
@@ -68,7 +69,9 @@ class FaceTracker:
         if not results.multi_face_landmarks:
             return None
 
-        pixels = np.array([(p.x * width, p.y * height) for p in results.multi_face_landmarks[0].landmark])
+        landmarks = np.array([(p.x * width, p.y * height, p.z * width)
+                              for p in results.multi_face_landmarks[0].landmark])
+        pixels = landmarks[:, :2]
         image_points = pixels[list(POSE_POINTS)]
         found, rotation, translation = cv2.solvePnP(
             MODEL, image_points, self.camera, self.distortion, flags=cv2.SOLVEPNP_ITERATIVE
@@ -110,4 +113,10 @@ class FaceTracker:
             brow_line = pixels[list(brow)].astype(np.int32)
             cv2.polylines(frame, [brow_line], False, (100, 213, 255), 1, cv2.LINE_AA)
 
-        return Observation(face, eyes, (rays[0], rays[1]) if len(rays) == 2 else None, np.array(brows))
+        anchor_depth = (transform @ POSE_POINTS[168] + face)[2]
+        relative_depth = (landmarks[:, 2] - landmarks[168, 2]) * anchor_depth / self.camera[0, 0]
+        pixel_rays = np.column_stack((pixels, np.ones(len(pixels)))) @ self.inverse_camera.T
+        face_landmarks = pixel_rays * (anchor_depth + relative_depth)[:, None]
+        return Observation(
+            face, eyes, (rays[0], rays[1]) if len(rays) == 2 else None, np.array(brows), face_landmarks,
+        )

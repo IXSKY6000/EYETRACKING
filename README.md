@@ -33,6 +33,12 @@ L’option `--camera 1` sélectionne la deuxième webcam si nécessaire. L’opt
 3. Cliquez sur **Activer le pointeur**. Regardez une zone de l’écran, stabilisez le regard, puis levez les deux sourcils. Le clic gauche attend environ 650 ms pour laisser le temps d’un deuxième geste. Pour le clic droit, relâchez les sourcils puis relevez-les dans ce délai. Si les gestes sont difficiles à déclencher, ajustez le **Seuil de levée des sourcils**.
 4. Pour mettre en pause, déplacez la souris physique dans un coin de l’écran ou pressez **Échap** lorsque la fenêtre a le focus. Recalibrez après avoir déplacé la caméra ou l’écran.
 
+## Vue 3D
+
+Cliquez sur **Ouvrir la vue 3D** pour voir le visage, les axes de la webcam et les deux rayons du regard en direct. Après une calibration 3D réussie, l’écran apparaît comme un rectangle bleu. Les points colorés sur ce rectangle indiquent où les rayons rencontrent sa surface. Le point jaune indique le milieu du plus court segment entre les deux rayons lorsque leur convergence est exploitable.
+
+Glissez dans la vue pour tourner autour de la scène, utilisez la molette pour zoomer et cliquez sur **Recentrer** pour revenir au cadrage d’origine. L’ouverture de la vue met le pointeur en pause.
+
 ## Géométrie
 
 MediaPipe détecte les iris, les paupières et les sourcils. OpenCV ajuste un modèle du visage aux repères vus par la caméra. Un globe oculaire approximatif sert à convertir chaque iris en rayon 3D. Les coordonnées affichées sont dans le repère de la caméra, avec X vers la droite de l’image brute, Y vers le bas et Z vers l’avant de la caméra.
