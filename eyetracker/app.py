@@ -404,6 +404,7 @@ def main() -> int:
     parser = argparse.ArgumentParser(description="Suivi du regard et des sourcils par webcam.")
     parser.add_argument("--camera", type=int, default=0, help="indice OpenCV de la webcam (0 par défaut)")
     parser.add_argument("--fov", type=float, default=65, help="champ de vision horizontal de la webcam en degrés")
+    parser.add_argument("--self-test", action="store_true", help=argparse.SUPPRESS)
     args = parser.parse_args()
     if args.camera < 0 or not 25 <= args.fov <= 120:
         parser.error("la caméra doit être positive ou nulle et le champ de vision entre 25° et 120°")
@@ -418,6 +419,22 @@ def main() -> int:
         print(f"Affichage graphique indisponible. Lancez Eye Tracker depuis une session de bureau. ({exc})",
               file=sys.stderr)
         return 1
+    if args.self_test:
+        root.withdraw()
+        try:
+            import pyautogui
+
+            if min(pyautogui.size()) <= 0:
+                return 1
+            tracker = FaceTracker(args.fov)
+            try:
+                frame = np.zeros((256, 256, 3), dtype=np.uint8)
+                return int(tracker.update(frame) is not None)
+            finally:
+                tracker.close()
+        finally:
+            root.destroy()
+
     Application(root, args.camera, args.fov)
     root.mainloop()
     return 0
